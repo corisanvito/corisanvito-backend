@@ -7,7 +7,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'https://TUO_USERNAME.github.io', // sostituisci con il tuo URL GitHub Pages
+  origin: 'https://corisanvito.github.io',
   credentials: true
 }));
 app.use(express.json());
