@@ -42,7 +42,7 @@ router.post('/login', async (req, res) => {
                 cognome: utente.cognome,
                 email: utente.email,
                 ruolo: utente.ruolo,
-                coro: utente.coro
+                cori: utente.cori
             }
         });
     } catch (err) {
