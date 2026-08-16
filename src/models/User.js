@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
         enum: ['direttore', 'responsabile', 'corista', 'strumentista'],
         required: true
     },
-    cori: [{ type: mongoose.Schema.Types.ObjectId, ref: 'cori' }],
+    cori: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coro' }],
     attivo: { type: Boolean, default: false }, // attivato dal direttore
     createdAt: { type: Date, default: Date.now }
 });
