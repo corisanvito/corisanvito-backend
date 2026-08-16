@@ -55,29 +55,4 @@ router.get('/me', auth, async (req, res) => {
     res.json(req.utente);
 });
 
-// ROUTE TEMPORANEA — rimuovila dopo aver creato il primo admin!
-router.post('/setup', async (req, res) => {
-    try {
-        const esistente = await User.findOne({ ruolo: 'direttore' });
-        if (esistente) {
-            return res.status(403).json({ message: 'Admin già esistente' });
-        }
-
-        const hash = await bcrypt.hash(req.body.password, 10);
-        const utente = new User({
-            nome: req.body.nome,
-            cognome: req.body.cognome,
-            email: req.body.email,
-            password: hash,
-            ruolo: 'direttore',
-            attivo: true
-        });
-
-        await utente.save();
-        res.status(201).json({ message: 'Direttore creato!' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
 module.exports = router;
