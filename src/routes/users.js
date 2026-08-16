@@ -8,7 +8,7 @@ const roles = require('../middleware/roles');
 // POST /users — crea nuovo utente (solo direttore/responsabile)
 router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        const { nome, cognome, email, password, ruolo, coro } = req.body;
+        const { nome, cognome, email, password, ruolo, cori } = req.body;
 
         const esistente = await User.findOne({ email });
         if (esistente) {
@@ -23,7 +23,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
             email,
             password: hash,
             ruolo,
-            coro,
+            cori,
             attivo: false // deve essere attivato manualmente
         });
 
@@ -37,7 +37,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 // GET /users — lista utenti (solo direttore/responsabile)
 router.get('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        const utenti = await User.find().select('-password').populate('coro');
+        const utenti = await User.find().select('-password').populate('cori');
         res.json(utenti);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
@@ -66,11 +66,11 @@ router.patch('/:id/attiva', auth, roles('direttore', 'responsabile'), async (req
 // PATCH /users/:id — modifica utente (solo direttore/responsabile)
 router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        const { nome, cognome, email, ruolo, coro } = req.body;
+        const { nome, cognome, email, ruolo, cori } = req.body;
 
         const utente = await User.findByIdAndUpdate(
             req.params.id,
-            { nome, cognome, email, ruolo, coro },
+            { nome, cognome, email, ruolo, cori },
             { new: true }
         ).select('-password');
 

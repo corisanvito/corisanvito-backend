@@ -11,7 +11,7 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body;
 
         // Trova utente
-        const utente = await User.findOne({ email }).populate('coro');
+        const utente = await User.findOne({ email }).populate('cori');
         if (!utente) {
             return res.status(401).json({ message: 'Credenziali non valide' });
         }
