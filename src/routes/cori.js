@@ -51,19 +51,4 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
     }
 });
 
-// ROUTE TEMPORANEA — rimuovila dopo!
-router.post('/setup', async (req, res) => {
-    try {
-        const cori = [
-            { nome: 'Coro delle 10' },
-            { nome: 'Coro delle 11:15' },
-            { nome: 'Coro Estivo' }
-        ];
-        await Coro.insertMany(cori);
-        res.json({ message: 'Cori creati!' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
 module.exports = router;
