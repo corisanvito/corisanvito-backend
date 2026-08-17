@@ -11,7 +11,15 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     cori: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coro' }],
-    attivo: { type: Boolean, default: false }, // attivato dal direttore
+    tipoVoce: {
+        type: String,
+        enum: ['bianca', 'soprano', 'contralto', 'tenore', 'basso', ''],
+        default: ''
+    },
+    dataNascita: { type: Date },
+    telefono: { type: String },
+    note: { type: String },
+    attivo: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
 
