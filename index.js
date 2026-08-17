@@ -24,6 +24,7 @@ app.use('/canti', require('./src/routes/canti'));
 app.use('/cori', require('./src/routes/cori'));
 app.use('/bacheca', require('./src/routes/bacheca'));
 app.use('/presenze', require('./src/routes/presenze'));
+app.use('/canti-settimana', require('./src/routes/cantiSettimana'));
 
 // Route di test
 app.get('/', (req, res) => {
