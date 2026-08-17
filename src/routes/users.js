@@ -114,8 +114,6 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
     }
 });
 
-module.exports = router;
-
 // PATCH /users/:id/password — cambio password (solo se stessi)
 router.patch('/:id/password', auth, async (req, res) => {
     try {
@@ -138,3 +136,5 @@ router.patch('/:id/password', auth, async (req, res) => {
         res.status(500).json({ message: 'Errore del server' });
     }
 });
+
+module.exports = router;
