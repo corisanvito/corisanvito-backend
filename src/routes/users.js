@@ -69,17 +69,12 @@ router.patch('/:id/attiva', auth, roles('direttore', 'responsabile'), async (req
     }
 });
 
-// PATCH /users/:id — modifica utente
-router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.get('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        const { nome, cognome, email, ruolo, cori, tipoVoce, dataNascita, telefono, note } = req.body;
-        const utente = await User.findByIdAndUpdate(
-            req.params.id,
-            { nome, cognome, email, ruolo, cori, tipoVoce, dataNascita, telefono, note },
-            { new: true }
-        ).select('-password');
-        if (!utente) return res.status(404).json({ message: 'Utente non trovato' });
-        res.json(utente);
+        const utenti = await User.find({ cori: { $in: req.utente.cori } })
+            .select('-password')
+            .populate('cori');
+        res.json(utenti);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
     }

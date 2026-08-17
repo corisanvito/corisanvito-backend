@@ -29,14 +29,10 @@ router.get('/statistiche', auth, async (req, res) => {
 // GET /presenze
 router.get('/', auth, async (req, res) => {
   try {
-    let query;
-    if (req.utente.ruolo === 'direttore') {
-      query = {}; // vede tutto
-    } else if (req.utente.ruolo === 'responsabile') {
-      query = { coro: { $in: req.utente.cori } }; // solo i suoi cori
-    } else {
-      query = { utente: req.utente._id }; // solo le proprie
-    }
+    const isAdmin = ['direttore', 'responsabile'].includes(req.utente.ruolo);
+    const query = isAdmin
+      ? { coro: { $in: req.utente.cori } }  // vede i suoi cori
+      : { utente: req.utente._id };           // vede solo le proprie
 
     const presenze = await Presenza.find(query)
       .populate('utente', 'nome cognome')
@@ -86,6 +82,26 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
   try {
     await Presenza.findByIdAndDelete(req.params.id);
     res.json({ message: 'Presenza eliminata' });
+  } catch (err) {
+    res.status(500).json({ message: 'Errore del server' });
+  }
+});
+
+// GET /presenze/coro/:coroId — presenze di un coro specifico (admin)
+router.get('/coro/:coroId', auth, roles('direttore', 'responsabile'), async (req, res) => {
+  try {
+    // verifica che il coro sia tra i suoi
+    const coriIds = req.utente.cori.map(c => c._id.toString());
+    if (!coriIds.includes(req.params.coroId)) {
+      return res.status(403).json({ message: 'Non autorizzato' });
+    }
+
+    const presenze = await Presenza.find({ coro: req.params.coroId })
+      .populate('utente', 'nome cognome')
+      .populate('coro', 'nome')
+      .sort({ data: -1 });
+
+    res.json(presenze);
   } catch (err) {
     res.status(500).json({ message: 'Errore del server' });
   }
