@@ -92,10 +92,10 @@ router.patch('/:id/profilo', auth, async (req, res) => {
         if (req.utente._id.toString() !== req.params.id) {
             return res.status(403).json({ message: 'Non autorizzato' });
         }
-        const { tipoVoce, dataNascita, telefono, note } = req.body;
+        const { email, tipoVoce, dataNascita, telefono, note } = req.body;
         const utente = await User.findByIdAndUpdate(
             req.params.id,
-            { tipoVoce, dataNascita, telefono, note },
+            { email, tipoVoce, dataNascita, telefono, note },
             { new: true }
         ).select('-password').populate('cori');
         res.json(utente);
@@ -115,3 +115,26 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
 });
 
 module.exports = router;
+
+// PATCH /users/:id/password — cambio password (solo se stessi)
+router.patch('/:id/password', auth, async (req, res) => {
+    try {
+        if (req.utente._id.toString() !== req.params.id) {
+            return res.status(403).json({ message: 'Non autorizzato' });
+        }
+
+        const { passwordAttuale, passwordNuova } = req.body;
+        const utente = await User.findById(req.params.id);
+        if (!utente) return res.status(404).json({ message: 'Utente non trovato' });
+
+        const corretta = await bcrypt.compare(passwordAttuale, utente.password);
+        if (!corretta) return res.status(401).json({ message: 'Password attuale non corretta' });
+
+        utente.password = await bcrypt.hash(passwordNuova, 10);
+        await utente.save();
+
+        res.json({ message: 'ok' });
+    } catch (err) {
+        res.status(500).json({ message: 'Errore del server' });
+    }
+});
