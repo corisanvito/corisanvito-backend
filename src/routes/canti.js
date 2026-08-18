@@ -44,19 +44,6 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
         const canto = new Canto({ titolo, autore, categoria, testo, note });
         await canto.save();
 
-        // Email di notifica
-        try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: 'corisanvito@gmail.com',
-                subject: `🎵 Nuovo canto aggiunto: ${titolo}`,
-                text: `${req.utente.nome} ${req.utente.cognome} ha aggiunto il canto "${titolo}"${autore ? ' di ' + autore : ''}${categoria ? ' (categoria: ' + categoria + ')' : ''}.\n\nTesto:\n${testo || '(nessun testo inserito)'}`
-            });
-        } catch (mailErr) {
-            console.error('Errore invio email:', mailErr);
-            // non blocca la risposta
-        }
-
         res.status(201).json(canto);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
@@ -79,30 +66,6 @@ router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res)
     try {
         await Canto.findByIdAndDelete(req.params.id);
         res.json({ message: 'Canto eliminato' });
-    } catch (err) {
-        res.status(500).json({ message: 'Errore del server' });
-    }
-});
-
-// POST /canti/:id/upload — carica PDF e manda email
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
-    try {
-        const { titolo, autore, categoria, testo, note, url } = req.body;
-        const canto = new Canto({ titolo, autore, categoria, testo, note, url });
-        await canto.save();
-
-        try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
-                to: 'corisanvito@gmail.com',
-                subject: `🎵 Nuovo canto aggiunto: ${titolo}`,
-                text: `${req.utente.nome} ${req.utente.cognome} ha aggiunto il canto "${titolo}"${autore ? ' di ' + autore : ''}${categoria ? ' (categoria: ' + categoria + ')' : ''}.\n\nTesto:\n${testo || '(nessun testo inserito)'}`
-            });
-        } catch (mailErr) {
-            console.error('Errore invio email:', mailErr);
-        }
-
-        res.status(201).json(canto);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
     }
