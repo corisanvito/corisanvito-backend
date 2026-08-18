@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const Canto = require('../src/models/Canto');
 const canti = require('C:/Users/ficot/Desktop/github/corisanvito.github.io/canti.json');
 
+/* ESEGUIRE CON node importCanti.js */
+
 async function importa() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connesso');
