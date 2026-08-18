@@ -33,14 +33,9 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 // GET /users
 router.get('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        let query;
-        if (req.utente.ruolo === 'direttore') {
-            query = {};
-        } else {
-            query = { cori: { $in: req.utente.cori } };
-        }
-
-        const utenti = await User.find(query).select('-password').populate('cori');
+        const utenti = await User.find({ cori: { $in: req.utente.cori } })
+            .select('-password')
+            .populate('cori');
         res.json(utenti);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
