@@ -10,16 +10,6 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
         const { nome, cognome, email, password, ruolo, cori, tipoVoce, dataNascita, telefono, note } = req.body;
 
-        // Il responsabile può creare utenti solo nei suoi cori
-        if (req.utente.ruolo === 'responsabile') {
-            const coriAdmin = req.utente.cori.map(c => c.toString());
-            const coriRichiesti = (cori || []);
-            const nonAutorizzati = coriRichiesti.filter(c => !coriAdmin.includes(c));
-            if (nonAutorizzati.length > 0) {
-                return res.status(403).json({ message: 'Non puoi creare utenti per cori non tuoi' });
-            }
-        }
-
         const esistente = await User.findOne({ email });
         if (esistente) return res.status(400).json({ message: 'Email già registrata' });
 
@@ -47,7 +37,6 @@ router.get('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
         if (req.utente.ruolo === 'direttore') {
             query = {};
         } else {
-            // Il responsabile vede solo gli utenti dei suoi cori
             query = { cori: { $in: req.utente.cori } };
         }
 
@@ -69,21 +58,9 @@ router.patch('/:id/attiva', auth, roles('direttore', 'responsabile'), async (req
     }
 });
 
-router.get('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
-    try {
-        const utenti = await User.find({ cori: { $in: req.utente.cori } })
-            .select('-password')
-            .populate('cori');
-        res.json(utenti);
-    } catch (err) {
-        res.status(500).json({ message: 'Errore del server' });
-    }
-});
-
 // PATCH /users/:id/profilo — l'utente modifica il proprio profilo
 router.patch('/:id/profilo', auth, async (req, res) => {
     try {
-        // Può modificare solo se stesso
         if (req.utente._id.toString() !== req.params.id) {
             return res.status(403).json({ message: 'Non autorizzato' });
         }
@@ -100,8 +77,15 @@ router.patch('/:id/profilo', auth, async (req, res) => {
 });
 
 // DELETE /users/:id
-router.delete('/:id', auth, roles('direttore'), async (req, res) => {
+router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
+        if (req.utente.ruolo === 'responsabile') {
+            const u = await User.findById(req.params.id);
+            if (!u) return res.status(404).json({ message: 'Utente non trovato' });
+            const coriAdmin = req.utente.cori.map(c => c.toString());
+            const ok = u.cori.some(c => coriAdmin.includes(c.toString()));
+            if (!ok) return res.status(403).json({ message: 'Non autorizzato' });
+        }
         await User.findByIdAndDelete(req.params.id);
         res.json({ message: 'Utente eliminato' });
     } catch (err) {
