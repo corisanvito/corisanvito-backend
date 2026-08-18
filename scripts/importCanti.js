@@ -1,20 +1,16 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Canto = require('../src/models/Canto');
-const canti = require('./canti.json');
+const canti = require('C:/Users/ficot/Desktop/github/corisanvito.github.io/canti.json');
 
 async function importa() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connesso');
 
     let importati = 0;
-    let saltati = 0;
+    let aggiornati = 0;
 
     for (const c of canti.canti) {
-        const esistente = await Canto.findOne({ titolo: c.titolo });
-        if (esistente) { saltati++; continue; }
-
-        // Estrai autore dal metadata
         let autore = '';
         if (c.metadata) {
             autore = c.metadata['Testo & Musica']
@@ -24,19 +20,30 @@ async function importa() {
                 || '';
         }
 
-        await Canto.create({
-            titolo: c.titolo,
-            testo: c.testo || '',
-            autore: autore,
-            categoria: (c.categorie || []).join(', '),
-            note: c.url || ''  // salviamo l'url originale nelle note per riferimento
-        });
+        const esistente = await Canto.findOne({ titolo: c.titolo });
 
-        importati++;
-        process.stdout.write(`\r${importati} canti importati…`);
+        await Canto.findOneAndUpdate(
+            { titolo: c.titolo },
+            {
+                titolo: c.titolo,
+                testo: c.testo || '',
+                autore,
+                categoria: (c.categorie || []).join(', '),
+                note: c.url || ''
+            },
+            { upsert: true }
+        );
+
+        if (esistente) {
+            aggiornati++;
+        } else {
+            importati++;
+        }
+
+        process.stdout.write(`\r${importati} nuovi, ${aggiornati} aggiornati…`);
     }
 
-    console.log(`\n✅ Fatto! ${importati} importati, ${saltati} già esistenti.`);
+    console.log(`\n✅ Fatto! ${importati} nuovi importati, ${aggiornati} aggiornati.`);
     await mongoose.disconnect();
 }
 
