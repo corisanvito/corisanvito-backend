@@ -79,13 +79,6 @@ router.patch('/:id/profilo', auth, async (req, res) => {
 // DELETE /users/:id
 router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        if (req.utente.ruolo === 'responsabile') {
-            const u = await User.findById(req.params.id);
-            if (!u) return res.status(404).json({ message: 'Utente non trovato' });
-            const coriAdmin = req.utente.cori.map(c => c.toString());
-            const ok = u.cori.some(c => coriAdmin.includes(c.toString()));
-            if (!ok) return res.status(403).json({ message: 'Non autorizzato' });
-        }
         await User.findByIdAndDelete(req.params.id);
         res.json({ message: 'Utente eliminato' });
     } catch (err) {
