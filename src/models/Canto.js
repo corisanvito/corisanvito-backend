@@ -5,10 +5,8 @@ const cantoSchema = new mongoose.Schema({
     autore: { type: String },
     categoria: { type: String },
     testo: { type: String },
-    partiture: [{
-        nome: { type: String },
-        url: { type: String }
-    }],
+    url: { type: String }, // es. "canti/nome-del-canto"
+    partiture: [{ nome: String, url: String }],
     note: { type: String },
     createdAt: { type: Date, default: Date.now }
 });

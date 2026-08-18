@@ -85,21 +85,24 @@ router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res)
 });
 
 // POST /canti/:id/upload — carica PDF e manda email
-router.post('/:id/upload', auth, roles('direttore', 'responsabile'), upload.single('file'), async (req, res) => {
+router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     try {
-        const canto = await Canto.findById(req.params.id);
-        if (!canto) return res.status(404).json({ message: 'Canto non trovato' });
-        if (!req.file) return res.status(400).json({ message: 'Nessun file caricato' });
+        const { titolo, autore, categoria, testo, note, url } = req.body;
+        const canto = new Canto({ titolo, autore, categoria, testo, note, url });
+        await canto.save();
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: 'corisanvito@gmail.com',
-            subject: `📄 Nuova partitura: ${canto.titolo}`,
-            text: `${req.utente.nome} ${req.utente.cognome} ha caricato una partitura per "${canto.titolo}".`,
-            attachments: [{ filename: req.file.originalname, content: req.file.buffer }]
-        });
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: 'corisanvito@gmail.com',
+                subject: `🎵 Nuovo canto aggiunto: ${titolo}`,
+                text: `${req.utente.nome} ${req.utente.cognome} ha aggiunto il canto "${titolo}"${autore ? ' di ' + autore : ''}${categoria ? ' (categoria: ' + categoria + ')' : ''}.\n\nTesto:\n${testo || '(nessun testo inserito)'}`
+            });
+        } catch (mailErr) {
+            console.error('Errore invio email:', mailErr);
+        }
 
-        res.json({ message: 'File inviato per revisione via email' });
+        res.status(201).json(canto);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
     }
