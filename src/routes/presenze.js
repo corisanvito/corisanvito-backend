@@ -51,8 +51,9 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
     const { utente, coro, tipo, data, presente, note } = req.body;
 
     // Il responsabile può registrare solo per i suoi cori
-    if (req.utente.ruolo === 'responsabile') {
-      const coriIds = req.utente.cori.map(c => c.toString());
+    const isAdmin = ['direttore', 'responsabile'].includes(req.utente.ruolo);
+    if (isAdmin) {
+      const coriIds = req.utente.cori.map(c => c._id ? c._id.toString() : c.toString());
       if (!coriIds.includes(coro)) {
         return res.status(403).json({ message: 'Non puoi registrare presenze per questo coro' });
       }
