@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const roles = require('../middleware/roles');
 
 // POST /users — crea utente
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const { nome, cognome, email, password, ruolo, cori, tipoVoce, dataNascita, telefono, note } = req.body;
 
@@ -31,7 +31,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 });
 
 // GET /users
-router.get('/', auth, roles('direttore', 'responsabile', 'admin'), async (req, res) => {
+router.get('/', auth, roles('admin', 'direttore', 'responsabile', 'admin'), async (req, res) => {
     try {
         const query = req.utente.ruolo === 'admin'
             ? {}
@@ -45,7 +45,7 @@ router.get('/', auth, roles('direttore', 'responsabile', 'admin'), async (req, r
 });
 
 // PATCH /users/:id/attiva
-router.patch('/:id/attiva', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.patch('/:id/attiva', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const utente = await User.findByIdAndUpdate(req.params.id, { attivo: true }, { new: true }).select('-password');
         if (!utente) return res.status(404).json({ message: 'Utente non trovato' });
@@ -74,7 +74,7 @@ router.patch('/:id/profilo', auth, async (req, res) => {
 });
 
 // DELETE /users/:id
-router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         await User.findByIdAndDelete(req.params.id);
         res.json({ message: 'Utente eliminato' });

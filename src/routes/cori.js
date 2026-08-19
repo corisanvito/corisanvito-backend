@@ -15,7 +15,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST /cori — crea coro (solo direttore)
-router.post('/', auth, roles('direttore'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const { nome, descrizione } = req.body;
         const coro = new Coro({ nome, descrizione });

@@ -38,7 +38,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // POST /canti — crea canto e manda email di notifica
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const { titolo, autore, categoria, testo, note } = req.body;
         const canto = new Canto({ titolo, autore, categoria, testo, note });
@@ -51,7 +51,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 });
 
 // PATCH /canti/:id
-router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.patch('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const canto = await Canto.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!canto) return res.status(404).json({ message: 'Canto non trovato' });
@@ -62,7 +62,7 @@ router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) 
 });
 
 // DELETE /canti/:id
-router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         await Canto.findByIdAndDelete(req.params.id);
         res.json({ message: 'Canto eliminato' });

@@ -29,7 +29,7 @@ router.get('/statistiche', auth, async (req, res) => {
 // GET /presenze
 router.get('/', auth, async (req, res) => {
   try {
-    const isAdmin = ['direttore', 'responsabile'].includes(req.utente.ruolo);
+    const isAdmin = ['admin', 'direttore', 'responsabile'].includes(req.utente.ruolo);
     const query = isAdmin
       ? { coro: { $in: req.utente.cori } }  // vede i suoi cori
       : { utente: req.utente._id };           // vede solo le proprie
@@ -46,12 +46,12 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST /presenze — registra presenza
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
   try {
     const { utente, coro, tipo, data, presente, note } = req.body;
 
     // Il responsabile può registrare solo per i suoi cori
-    const isAdmin = ['direttore', 'responsabile'].includes(req.utente.ruolo);
+    const isAdmin = ['admin', 'direttore', 'responsabile'].includes(req.utente.ruolo);
     if (isAdmin) {
       const coriIds = req.utente.cori.map(c => c._id ? c._id.toString() : c.toString());
       if (!coriIds.includes(coro)) {
@@ -68,7 +68,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 });
 
 // PATCH /presenze/:id
-router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.patch('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
   try {
     const presenza = await Presenza.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!presenza) return res.status(404).json({ message: 'Presenza non trovata' });
@@ -79,7 +79,7 @@ router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) 
 });
 
 // DELETE /presenze/:id
-router.delete('/:id', auth, roles('direttore'), async (req, res) => {
+router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
   try {
     await Presenza.findByIdAndDelete(req.params.id);
     res.json({ message: 'Presenza eliminata' });
@@ -89,7 +89,7 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
 });
 
 // GET /presenze/coro/:coroId — presenze di un coro specifico (admin)
-router.get('/coro/:coroId', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.get('/coro/:coroId', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
   try {
     const presenze = await Presenza.find({ coro: req.params.coroId })
       .populate('utente', 'nome cognome')

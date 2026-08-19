@@ -18,7 +18,7 @@ router.get('/:coroId', async (req, res) => {
 });
 
 // POST /canti-settimana — crea (solo admin)
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const { coro, tipo, titolo, link, indicazione, tempoForte, dataDomenica } = req.body;
 
@@ -37,7 +37,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 });
 
 // DELETE /canti-settimana/:id — elimina (solo admin)
-router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         await CantoSettimana.findByIdAndDelete(req.params.id);
         res.json({ message: 'Canto rimosso' });
@@ -47,7 +47,7 @@ router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res)
 });
 
 // DELETE /canti-settimana/coro/:coroId/tipo/:tipo — svuota una sezione intera
-router.delete('/coro/:coroId/tipo/:tipo', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.delete('/coro/:coroId/tipo/:tipo', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const coriIds = req.utente.cori.map(c => c._id.toString());
         if (!coriIds.includes(req.params.coroId)) {

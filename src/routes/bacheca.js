@@ -7,7 +7,7 @@ const roles = require('../middleware/roles');
 // GET /bacheca
 router.get('/', auth, async (req, res) => {
     try {
-        const isAdmin = ['direttore', 'responsabile'].includes(req.utente.ruolo);
+        const isAdmin = ['admin', 'direttore', 'responsabile'].includes(req.utente.ruolo);
         const query = isAdmin
             ? { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] }
             : { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] };
@@ -24,7 +24,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // POST /bacheca
-router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const { titolo, testo, coro } = req.body;
 
@@ -45,7 +45,7 @@ router.post('/', auth, roles('direttore', 'responsabile'), async (req, res) => {
 });
 
 // PATCH /bacheca/:id
-router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.patch('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         const avviso = await Avviso.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!avviso) return res.status(404).json({ message: 'Avviso non trovato' });
@@ -56,7 +56,7 @@ router.patch('/:id', auth, roles('direttore', 'responsabile'), async (req, res) 
 });
 
 // DELETE /bacheca/:id
-router.delete('/:id', auth, roles('direttore', 'responsabile'), async (req, res) => {
+router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
         await Avviso.findByIdAndDelete(req.params.id);
         res.json({ message: 'Avviso eliminato' });
