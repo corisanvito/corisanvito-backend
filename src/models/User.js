@@ -13,7 +13,6 @@ const userSchema = new mongoose.Schema({
     cori: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Coro' }],
     tipoVoce: {
         type: String,
-        enum: ['bianca', 'soprano', 'contralto', 'tenore', 'basso', ''],
         default: ''
     },
     dataNascita: { type: Date },
