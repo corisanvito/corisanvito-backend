@@ -7,10 +7,13 @@ const roles = require('../middleware/roles');
 // GET /bacheca
 router.get('/', auth, async (req, res) => {
     try {
-        const isAdmin = ['admin', 'direttore', 'responsabile'].includes(req.utente.ruolo);
-        const query = isAdmin
-            ? { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] }
-            : { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] };
+        let query;
+
+        if (req.utente.ruolo === 'admin') {
+            query = {}; // vede tutto
+        } else {
+            query = { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] };
+        }
 
         const avvisi = await Avviso.find(query)
             .populate('autore', 'nome cognome')
