@@ -22,10 +22,12 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, 
     try {
         const { coro, tipo, titolo, link, indicazione, tempoForte, dataDomenica } = req.body;
 
-        // Verifica che il coro sia tra i suoi
-        const coriIds = req.utente.cori.map(c => c._id.toString());
-        if (!coriIds.includes(coro)) {
-            return res.status(403).json({ message: 'Non puoi gestire questo coro' });
+        // Se non è admin, verifica che il coro sia tra i suoi
+        if (req.utente.ruolo !== 'admin') {
+            const coriIds = req.utente.cori.map(c => c._id.toString());
+            if (!coriIds.includes(coro)) {
+                return res.status(403).json({ message: 'Non puoi gestire questo coro' });
+            }
         }
 
         const canto = new CantoSettimana({ coro, tipo, titolo, link, indicazione, tempoForte, dataDomenica });
@@ -39,6 +41,17 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, 
 // DELETE /canti-settimana/:id — elimina (solo admin)
 router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
+        // Prima di eliminare, controlla se il canto esiste e se l'utente può gestirlo
+        const canto = await CantoSettimana.findById(req.params.id);
+        if (!canto) return res.status(404).json({ message: 'Canto non trovato' });
+
+        if (req.utente.ruolo !== 'admin') {
+            const coriIds = req.utente.cori.map(c => c._id.toString());
+            if (!coriIds.includes(canto.coro.toString())) {
+                return res.status(403).json({ message: 'Non puoi gestire questo coro' });
+            }
+        }
+
         await CantoSettimana.findByIdAndDelete(req.params.id);
         res.json({ message: 'Canto rimosso' });
     } catch (err) {
