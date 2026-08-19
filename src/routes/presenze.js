@@ -91,12 +91,6 @@ router.delete('/:id', auth, roles('direttore'), async (req, res) => {
 // GET /presenze/coro/:coroId — presenze di un coro specifico (admin)
 router.get('/coro/:coroId', auth, roles('direttore', 'responsabile'), async (req, res) => {
   try {
-    // verifica che il coro sia tra i suoi
-    const coriIds = req.utente.cori.map(c => c._id.toString());
-    if (!coriIds.includes(req.params.coroId)) {
-      return res.status(403).json({ message: 'Non autorizzato' });
-    }
-
     const presenze = await Presenza.find({ coro: req.params.coroId })
       .populate('utente', 'nome cognome')
       .populate('coro', 'nome')
