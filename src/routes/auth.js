@@ -55,24 +55,4 @@ router.get('/me', auth, async (req, res) => {
     res.json(req.utente);
 });
 
-// ROUTE TEMPORANEA — rimuovila dopo!
-router.post('/setup-admin', async (req, res) => {
-    try {
-        const hash = await bcrypt.hash(req.body.password, 10);
-        const utente = new User({
-            nome: req.body.nome,
-            cognome: req.body.cognome,
-            email: req.body.email,
-            password: hash,
-            ruolo: 'admin',
-            cori: [],
-            attivo: true
-        });
-        await utente.save();
-        res.status(201).json({ message: 'Admin creato!' });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
 module.exports = router;
