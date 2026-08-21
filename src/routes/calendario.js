@@ -27,7 +27,11 @@ router.get('/:coroId', auth, async (req, res) => {
 
         const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=${process.env.GOOGLE_API_KEY}&timeMin=${oggi.toISOString()}&timeMax=${traUnAnno.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`;
 
-        const risposta = await fetch(url);
+        const risposta = await fetch(url, {
+            headers: {
+                'Referer': 'https://corisanvito-backend.onrender.com'
+            }
+        });
         const data = await risposta.json();
 
         console.log('Google response status:', risposta.status);
