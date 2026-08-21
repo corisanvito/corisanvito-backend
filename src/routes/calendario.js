@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 
+const risposta = await fetch(url);
+const data = await risposta.json();
+console.log('Google response status:', risposta.status);
+console.log('Google response data:', JSON.stringify(data));
+
 // Mappa coroId → calendar ID Google
 const CALENDARI = {
     [process.env.CAL_ID_CORO10]: process.env.CAL_CORO10,
@@ -15,7 +20,7 @@ router.get('/:coroId', auth, async (req, res) => {
         console.log('coroId ricevuto:', req.params.coroId);
         console.log('CALENDARI keys:', Object.keys(CALENDARI));
         console.log('calendarId trovato:', CALENDARI[req.params.coroId]);
-        
+
         const calendarId = CALENDARI[req.params.coroId];
         if (!calendarId) {
             return res.status(404).json({ message: 'Calendario non trovato' });
