@@ -12,6 +12,10 @@ const CALENDARI = {
 // GET /calendario/:coroId — eventi del coro (solo utenti loggati)
 router.get('/:coroId', auth, async (req, res) => {
     try {
+        console.log('coroId ricevuto:', req.params.coroId);
+        console.log('CALENDARI keys:', Object.keys(CALENDARI));
+        console.log('calendarId trovato:', CALENDARI[req.params.coroId]);
+        
         const calendarId = CALENDARI[req.params.coroId];
         if (!calendarId) {
             return res.status(404).json({ message: 'Calendario non trovato' });
