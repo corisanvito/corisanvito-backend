@@ -2,11 +2,6 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 
-const risposta = await fetch(url);
-const data = await risposta.json();
-console.log('Google response status:', risposta.status);
-console.log('Google response data:', JSON.stringify(data));
-
 // Mappa coroId → calendar ID Google
 const CALENDARI = {
     [process.env.CAL_ID_CORO10]: process.env.CAL_CORO10,
@@ -35,6 +30,9 @@ router.get('/:coroId', auth, async (req, res) => {
         const risposta = await fetch(url);
         const data = await risposta.json();
 
+        console.log('Google response status:', risposta.status);
+        console.log('Google response data:', JSON.stringify(data));
+
         if (data.error) {
             return res.status(500).json({ message: data.error.message });
         }
@@ -51,6 +49,7 @@ router.get('/:coroId', auth, async (req, res) => {
 
         res.json(eventi);
     } catch (err) {
+        console.log('Errore catch:', err);
         res.status(500).json({ message: 'Errore del server' });
     }
 });
