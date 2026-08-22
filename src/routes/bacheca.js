@@ -18,6 +18,13 @@ router.get('/', auth, async (req, res) => {
         } else {
             // Ricarica utente fresco dal DB
             const utenteDb = await User.findById(req.utente._id).populate('cori');
+            
+            console.log('tipoVoce utente:', utenteDb.tipoVoce);
+            console.log('tipoVoci array:', tipoVoci);
+
+            const avvisi = await Avviso.find(query);
+            console.log('avvisi trovati:', avvisi.length);
+
             const tipoVoci = utenteDb.tipoVoce
                 ? utenteDb.tipoVoce.split(',').map(v => v.trim())
                 : [];
