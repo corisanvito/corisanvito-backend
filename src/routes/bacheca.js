@@ -24,8 +24,13 @@ router.get('/', auth, async (req, res) => {
 
             query = {
                 $or: [
-                    { coro: { $in: coriIds }, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
-                    { coro: null, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
+                    {
+                        $and: [
+                            { $or: [{ coro: { $in: coriIds } }, { coro: null }] },
+                            { $or: [{ destinatariUtenti: { $size: 0 } }, { destinatariUtenti: { $exists: false } }] },
+                            { $or: [{ destinatariVoci: { $size: 0 } }, { destinatariVoci: { $exists: false } }] }
+                        ]
+                    },
                     { destinatariUtenti: req.utente._id },
                     { coro: { $in: coriIds }, destinatariVoci: { $in: tipoVoci } }
                 ]
@@ -94,7 +99,6 @@ router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (
         const avviso = await Avviso.findById(req.params.id);
         if (!avviso) return res.status(404).json({ message: 'Avviso non trovato' });
 
-        // Elimina allegati da Drive
         for (const a of avviso.allegati || []) {
             if (a.driveId) await eliminaDaDrive(a.driveId);
         }
