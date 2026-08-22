@@ -1,23 +1,39 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const Avviso = require('../models/Bacheca');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const roles = require('../middleware/roles');
+const { caricaSuDrive, eliminaDaDrive } = require('../utils/drive');
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 // GET /bacheca
 router.get('/', auth, async (req, res) => {
     try {
         let query;
-
         if (req.utente.ruolo === 'admin') {
-            query = {}; // vede tutto
+            query = {};
         } else {
-            query = { $or: [{ coro: { $in: req.utente.cori } }, { coro: null }] };
+            const tipoVoci = req.utente.tipoVoce
+                ? req.utente.tipoVoce.split(',').map(v => v.trim())
+                : [];
+
+            query = {
+                $or: [
+                    { coro: { $in: req.utente.cori }, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
+                    { coro: null, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
+                    { destinatariUtenti: req.utente._id },
+                    { destinatariVoci: { $in: tipoVoci } }
+                ]
+            };
         }
 
         const avvisi = await Avviso.find(query)
             .populate('autore', 'nome cognome')
             .populate('coro', 'nome')
+            .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
 
         res.json(avvisi);
@@ -26,42 +42,62 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// POST /bacheca
-router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
-    try {
-        const { titolo, testo, coro } = req.body;
+// POST /bacheca — crea avviso con allegati opzionali
+router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
+    upload.array('allegati', 5),
+    async (req, res) => {
+        try {
+            const { titolo, testo, coro, destinatariUtenti, destinatariVoci } = req.body;
 
-        // Il responsabile può pubblicare solo per i suoi cori (o per tutti con coro=null)
-        if (req.utente.ruolo === 'responsabile' && coro) {
-            const coriIds = req.utente.cori.map(c => c.toString());
-            if (!coriIds.includes(coro)) {
-                return res.status(403).json({ message: 'Non puoi pubblicare avvisi per questo coro' });
+            const allegati = [];
+            if (req.files && req.files.length > 0) {
+                for (const file of req.files) {
+                    const risultato = await caricaSuDrive(
+                        file.buffer,
+                        file.originalname,
+                        file.mimetype
+                    );
+                    allegati.push({
+                        nome: file.originalname,
+                        viewLink: risultato.viewLink,
+                        downloadLink: risultato.downloadLink,
+                        driveId: risultato.id,
+                        mimeType: file.mimetype
+                    });
+                }
             }
+
+            const avviso = new Avviso({
+                titolo,
+                testo,
+                coro: coro || null,
+                autore: req.utente._id,
+                destinatariUtenti: destinatariUtenti ? JSON.parse(destinatariUtenti) : [],
+                destinatariVoci: destinatariVoci ? JSON.parse(destinatariVoci) : [],
+                allegati
+            });
+
+            await avviso.save();
+            res.status(201).json(avviso);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Errore del server' });
         }
-
-        const avviso = new Avviso({ titolo, testo, coro: coro || null, autore: req.utente._id });
-        await avviso.save();
-        res.status(201).json(avviso);
-    } catch (err) {
-        res.status(500).json({ message: 'Errore del server' });
     }
-});
-
-// PATCH /bacheca/:id
-router.patch('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
-    try {
-        const avviso = await Avviso.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!avviso) return res.status(404).json({ message: 'Avviso non trovato' });
-        res.json(avviso);
-    } catch (err) {
-        res.status(500).json({ message: 'Errore del server' });
-    }
-});
+);
 
 // DELETE /bacheca/:id
 router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
     try {
-        await Avviso.findByIdAndDelete(req.params.id);
+        const avviso = await Avviso.findById(req.params.id);
+        if (!avviso) return res.status(404).json({ message: 'Avviso non trovato' });
+
+        // Elimina allegati da Drive
+        for (const a of avviso.allegati || []) {
+            if (a.driveId) await eliminaDaDrive(a.driveId);
+        }
+
+        await avviso.deleteOne();
         res.json({ message: 'Avviso eliminato' });
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
