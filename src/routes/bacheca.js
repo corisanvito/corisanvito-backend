@@ -16,11 +16,12 @@ router.get('/', auth, async (req, res) => {
         if (req.utente.ruolo === 'admin') {
             query = {};
         } else {
-            const tipoVoci = req.utente.tipoVoce
-                ? req.utente.tipoVoce.split(',').map(v => v.trim())
+            // Ricarica utente fresco dal DB
+            const utenteDb = await User.findById(req.utente._id).populate('cori');
+            const tipoVoci = utenteDb.tipoVoce
+                ? utenteDb.tipoVoce.split(',').map(v => v.trim())
                 : [];
-
-            const coriIds = req.utente.cori.map(c => c._id || c);
+            const coriIds = utenteDb.cori.map(c => c._id || c);
 
             query = {
                 $or: [
