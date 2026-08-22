@@ -23,12 +23,9 @@ router.get('/', auth, async (req, res) => {
                 : [];
             const coriIds = utenteDb.cori.map(c => c._id || c);
 
-            console.log('tipoVoce utente:', utenteDb.tipoVoce);
-            console.log('tipoVoci array:', tipoVoci);
-            console.log('coriIds:', coriIds);
-
             query = {
                 $or: [
+                    // avvisi generali per il coro o per tutti
                     {
                         $and: [
                             { $or: [{ coro: { $in: coriIds } }, { coro: null }] },
@@ -36,27 +33,19 @@ router.get('/', auth, async (req, res) => {
                             { $or: [{ destinatariVoci: { $size: 0 } }, { destinatariVoci: { $exists: false } }] }
                         ]
                     },
+                    // avvisi per utente specifico
                     { destinatariUtenti: req.utente._id },
-                    { coro: { $in: coriIds }, destinatariVoci: { $in: tipoVoci } }
+                    // avvisi per voce (con o senza coro specifico)
+                    { destinatariVoci: { $in: tipoVoci } }
                 ]
             };
         }
-
-        const tuttiAvvisi = await Avviso.find({});
-        console.log('tutti gli avvisi:', JSON.stringify(tuttiAvvisi.map(a => ({
-            titolo: a.titolo,
-            coro: a.coro,
-            destinatariVoci: a.destinatariVoci,
-            destinatariUtenti: a.destinatariUtenti
-        }))));
 
         const avvisi = await Avviso.find(query)
             .populate('autore', 'nome cognome')
             .populate('coro', 'nome')
             .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
-
-        console.log('avvisi trovati:', avvisi.length);
 
         res.json(avvisi);
     } catch (err) {
