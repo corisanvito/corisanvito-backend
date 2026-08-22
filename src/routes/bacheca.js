@@ -42,6 +42,14 @@ router.get('/', auth, async (req, res) => {
             };
         }
 
+        const tuttiAvvisi = await Avviso.find({});
+        console.log('tutti gli avvisi:', JSON.stringify(tuttiAvvisi.map(a => ({
+            titolo: a.titolo,
+            coro: a.coro,
+            destinatariVoci: a.destinatariVoci,
+            destinatariUtenti: a.destinatariUtenti
+        }))));
+
         const avvisi = await Avviso.find(query)
             .populate('autore', 'nome cognome')
             .populate('coro', 'nome')
