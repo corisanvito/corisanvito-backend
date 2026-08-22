@@ -20,12 +20,14 @@ router.get('/', auth, async (req, res) => {
                 ? req.utente.tipoVoce.split(',').map(v => v.trim())
                 : [];
 
+            const coriIds = req.utente.cori.map(c => c._id || c);
+
             query = {
                 $or: [
-                    { coro: { $in: req.utente.cori }, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
+                    { coro: { $in: coriIds }, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
                     { coro: null, destinatariUtenti: { $size: 0 }, destinatariVoci: { $size: 0 } },
                     { destinatariUtenti: req.utente._id },
-                    { destinatariVoci: { $in: tipoVoci } }
+                    { coro: { $in: coriIds }, destinatariVoci: { $in: tipoVoci } }
                 ]
             };
         }
