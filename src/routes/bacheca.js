@@ -16,19 +16,16 @@ router.get('/', auth, async (req, res) => {
         if (req.utente.ruolo === 'admin') {
             query = {};
         } else {
-            // Ricarica utente fresco dal DB
             const utenteDb = await User.findById(req.utente._id).populate('cori');
-            
-            console.log('tipoVoce utente:', utenteDb.tipoVoce);
-            console.log('tipoVoci array:', tipoVoci);
-
-            const avvisi = await Avviso.find(query);
-            console.log('avvisi trovati:', avvisi.length);
 
             const tipoVoci = utenteDb.tipoVoce
                 ? utenteDb.tipoVoce.split(',').map(v => v.trim())
                 : [];
             const coriIds = utenteDb.cori.map(c => c._id || c);
+
+            console.log('tipoVoce utente:', utenteDb.tipoVoce);
+            console.log('tipoVoci array:', tipoVoci);
+            console.log('coriIds:', coriIds);
 
             query = {
                 $or: [
@@ -51,8 +48,11 @@ router.get('/', auth, async (req, res) => {
             .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
 
+        console.log('avvisi trovati:', avvisi.length);
+
         res.json(avvisi);
     } catch (err) {
+        console.error('Errore bacheca GET:', err);
         res.status(500).json({ message: 'Errore del server' });
     }
 });
