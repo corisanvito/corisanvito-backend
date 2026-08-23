@@ -15,7 +15,8 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
                 resource_type: 'auto',
                 public_id: nomeFile.replace(/\.[^/.]+$/, ''),
                 use_filename: true,
-                unique_filename: true
+                unique_filename: true,
+                access_mode: 'public'
             },
             (error, result) => {
                 if (error) return reject(error);
