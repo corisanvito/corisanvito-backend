@@ -11,6 +11,7 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             {
+                upload_preset: 'corisanvito_bacheca',
                 folder: 'corisanvito/bacheca',
                 resource_type: 'auto',
                 public_id: nomeFile.replace(/\.[^/.]+$/, ''),
