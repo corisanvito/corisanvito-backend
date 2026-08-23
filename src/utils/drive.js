@@ -1,58 +1,41 @@
-const { google } = require('googleapis');
+const cloudinary = require('cloudinary').v2;
 const { Readable } = require('stream');
 
-function getAuth() {
-    return new google.auth.GoogleAuth({
-        credentials: {
-            client_email: process.env.GOOGLE_SERVICE_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-        },
-        scopes: ['https://www.googleapis.com/auth/drive']
-    });
-}
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 async function caricaSuDrive(buffer, nomeFile, mimeType) {
-    const drive = google.drive({ version: 'v3', auth: getAuth() });
-    const stream = Readable.from(buffer);
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                folder: 'corisanvito/bacheca',
+                resource_type: 'auto',
+                public_id: nomeFile.replace(/\.[^/.]+$/, ''),
+                use_filename: true,
+                unique_filename: true
+            },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve({
+                    id: result.public_id,
+                    viewLink: result.secure_url,
+                    downloadLink: result.secure_url
+                });
+            }
+        );
 
-    const res = await drive.files.create({
-        requestBody: {
-            name: nomeFile,
-            parents: [process.env.GOOGLE_DRIVE_FOLDER_ID]
-        },
-        media: {
-            mimeType,
-            body: stream
-        },
-        fields: 'id, webViewLink, webContentLink',
-        supportsAllDrives: true
+        Readable.from(buffer).pipe(stream);
     });
-
-    await drive.permissions.create({
-        fileId: res.data.id,
-        requestBody: {
-            role: 'reader',
-            type: 'anyone'
-        },
-        supportsAllDrives: true
-    });
-
-    return {
-        id: res.data.id,
-        viewLink: res.data.webViewLink,
-        downloadLink: `https://drive.google.com/uc?export=download&id=${res.data.id}`
-    };
 }
 
 async function eliminaDaDrive(fileId) {
     try {
-        const drive = google.drive({ version: 'v3', auth: getAuth() });
-        await drive.files.delete({
-            fileId,
-            supportsAllDrives: true
-        });
+        await cloudinary.uploader.destroy(fileId, { resource_type: 'auto' });
     } catch (err) {
-        console.error('Errore eliminazione Drive:', err.message);
+        console.error('Errore eliminazione Cloudinary:', err.message);
     }
 }
 
