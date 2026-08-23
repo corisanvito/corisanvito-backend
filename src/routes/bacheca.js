@@ -47,6 +47,8 @@ router.get('/', auth, async (req, res) => {
             .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
 
+            console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
+            
         res.json(avvisi);
     } catch (err) {
         console.error('Errore bacheca GET:', err);
