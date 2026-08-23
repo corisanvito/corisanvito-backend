@@ -21,10 +21,21 @@ async function creaCartella() {
     });
 
     console.log('✅ Cartella creata!');
-    console.log('Nome:', res.data.name);
     console.log('ID:', res.data.id);
     console.log('Link:', res.data.webViewLink);
-    console.log('\n👉 Copia questo ID e mettilo come GOOGLE_DRIVE_FOLDER_ID su Render e nel .env');
+
+    // Condividi con il tuo account
+    await drive.permissions.create({
+        fileId: res.data.id,
+        requestBody: {
+            role: 'writer',
+            type: 'user',
+            emailAddress: 'corisanvito@gmail.com'
+        }
+    });
+
+    console.log('✅ Cartella condivisa con corisanvito@gmail.com');
+    console.log('\n👉 Copia questo ID e aggiorna GOOGLE_DRIVE_FOLDER_ID:', res.data.id);
 }
 
 creaCartella().catch(err => {
