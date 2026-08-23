@@ -19,7 +19,7 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
                 upload_preset: 'corisanvito_bacheca',
                 folder: 'corisanvito/bacheca',
                 resource_type: resourceType,
-                public_id: nomeFile.replace(/\.[^/.]+$/, ''),
+                public_id: resourceType === 'raw' ? nomeFile : nomeFile.replace(/\.[^/.]+$/, ''),
                 use_filename: true,
                 unique_filename: true,
                 access_mode: 'public'
