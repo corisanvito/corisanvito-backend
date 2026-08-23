@@ -26,7 +26,7 @@ app.use('/bacheca', require('./src/routes/bacheca'));
 app.use('/presenze', require('./src/routes/presenze'));
 app.use('/canti-settimana', require('./src/routes/cantiSettimana'));
 app.use('/calendario', require('./src/routes/calendario'));
-
+app.use('/spartiti', require('./src/routes/spartiti'));
 // Route di test
 app.get('/', (req, res) => {
   res.json({ message: '✅ API Cori San Vito attiva' });
