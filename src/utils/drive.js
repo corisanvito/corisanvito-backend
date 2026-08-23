@@ -1,17 +1,18 @@
 const { google } = require('googleapis');
 const { Readable } = require('stream');
 
-const auth = new google.auth.GoogleAuth({
-    credentials: {
-        client_email: process.env.GOOGLE_SERVICE_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    },
-    scopes: ['https://www.googleapis.com/auth/drive']
-});
-
-const drive = google.drive({ version: 'v3', auth });
+function getAuth() {
+    return new google.auth.GoogleAuth({
+        credentials: {
+            client_email: process.env.GOOGLE_SERVICE_EMAIL,
+            private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        },
+        scopes: ['https://www.googleapis.com/auth/drive']
+    });
+}
 
 async function caricaSuDrive(buffer, nomeFile, mimeType) {
+    const drive = google.drive({ version: 'v3', auth: getAuth() });
     const stream = Readable.from(buffer);
 
     const res = await drive.files.create({
@@ -23,16 +24,17 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
             mimeType,
             body: stream
         },
-        fields: 'id, webViewLink, webContentLink'
+        fields: 'id, webViewLink, webContentLink',
+        supportsAllDrives: true
     });
 
-    // Rendi il file pubblico in lettura
     await drive.permissions.create({
         fileId: res.data.id,
         requestBody: {
             role: 'reader',
             type: 'anyone'
-        }
+        },
+        supportsAllDrives: true
     });
 
     return {
@@ -44,7 +46,11 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
 
 async function eliminaDaDrive(fileId) {
     try {
-        await drive.files.delete({ fileId });
+        const drive = google.drive({ version: 'v3', auth: getAuth() });
+        await drive.files.delete({
+            fileId,
+            supportsAllDrives: true
+        });
     } catch (err) {
         console.error('Errore eliminazione Drive:', err.message);
     }
