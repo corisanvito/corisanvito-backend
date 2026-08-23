@@ -48,7 +48,7 @@ router.get('/', auth, async (req, res) => {
             .sort({ createdAt: -1 });
 
             console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
-            
+
         res.json(avvisi);
     } catch (err) {
         console.error('Errore bacheca GET:', err);
@@ -92,6 +92,7 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
             });
 
             await avviso.save();
+            console.log('avviso salvato:', JSON.stringify({ id: avviso._id, titolo: avviso.titolo, coro: avviso.coro, voci: avviso.destinatariVoci, utenti: avviso.destinatariUtenti, allegati: avviso.allegati?.length }));
             res.status(201).json(avviso);
         } catch (err) {
             console.error(err);
