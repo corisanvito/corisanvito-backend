@@ -8,12 +8,17 @@ cloudinary.config({
 });
 
 async function caricaSuDrive(buffer, nomeFile, mimeType) {
+    // Determina il resource_type corretto
+    let resourceType = 'raw';
+    if (mimeType.startsWith('image/')) resourceType = 'image';
+    else if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) resourceType = 'video';
+
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             {
                 upload_preset: 'corisanvito_bacheca',
                 folder: 'corisanvito/bacheca',
-                resource_type: 'auto',
+                resource_type: resourceType,
                 public_id: nomeFile.replace(/\.[^/.]+$/, ''),
                 use_filename: true,
                 unique_filename: true,
@@ -35,7 +40,12 @@ async function caricaSuDrive(buffer, nomeFile, mimeType) {
 
 async function eliminaDaDrive(fileId) {
     try {
-        await cloudinary.uploader.destroy(fileId, { resource_type: 'auto' });
+        // Prova prima come raw, poi come image
+        try {
+            await cloudinary.uploader.destroy(fileId, { resource_type: 'raw' });
+        } catch {
+            await cloudinary.uploader.destroy(fileId, { resource_type: 'image' });
+        }
     } catch (err) {
         console.error('Errore eliminazione Cloudinary:', err.message);
     }
