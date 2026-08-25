@@ -9,8 +9,11 @@ async function importa() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connesso');
 
+    // Reset totale della collezione prima di reimportare
+    const { deletedCount } = await Canto.deleteMany({});
+    console.log(`🗑️  Collezione svuotata: ${deletedCount} canti rimossi`);
+
     let importati = 0;
-    let aggiornati = 0;
 
     for (const c of canti.canti) {
         let autore = '';
@@ -22,30 +25,19 @@ async function importa() {
                 || '';
         }
 
-        const esistente = await Canto.findOne({ titolo: c.titolo });
+        await Canto.create({
+            titolo: c.titolo,
+            testo: c.testo || '',
+            autore,
+            categoria: (c.categorie || []).join(', '),
+            note: c.url || ''
+        });
 
-        await Canto.findOneAndUpdate(
-            { titolo: c.titolo },
-            {
-                titolo: c.titolo,
-                testo: c.testo || '',
-                autore,
-                categoria: (c.categorie || []).join(', '),
-                note: c.url || ''
-            },
-            { upsert: true }
-        );
-
-        if (esistente) {
-            aggiornati++;
-        } else {
-            importati++;
-        }
-
-        process.stdout.write(`\r${importati} nuovi, ${aggiornati} aggiornati…`);
+        importati++;
+        process.stdout.write(`\r${importati} canti importati…`);
     }
 
-    console.log(`\n✅ Fatto! ${importati} nuovi importati, ${aggiornati} aggiornati.`);
+    console.log(`\n✅ Fatto! ${importati} canti importati (db resettato e ricaricato da zero).`);
     await mongoose.disconnect();
 }
 
