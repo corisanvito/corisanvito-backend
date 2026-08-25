@@ -30,7 +30,7 @@ async function importa() {
             testo: c.testo || '',
             autore,
             categoria: (c.categorie || []).join(', '),
-            note: c.url || ''
+            url: c.url || ''
         });
 
         importati++;
