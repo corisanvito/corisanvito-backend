@@ -38,6 +38,12 @@ async function importa() {
     }
 
     console.log(`\n✅ Fatto! ${importati} canti importati (db resettato e ricaricato da zero).`);
+
+    console.log('\n📋 Elenco titoli dei canti:');
+    canti.canti.forEach((c) => {
+        console.log(c.titolo);
+    });
+
     await mongoose.disconnect();
 }
 
