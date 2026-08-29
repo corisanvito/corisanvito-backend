@@ -7,7 +7,7 @@ const roles = require('../middleware/roles');
 // GET /cori — lista tutti i cori
 router.get('/', auth, async (req, res) => {
     try {
-        const cori = await Coro.find().sort({ _id: -1 });
+        const cori = await Coro.find().sort({ _id: 1 });
         res.json(cori);
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
