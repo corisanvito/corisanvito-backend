@@ -27,6 +27,9 @@ app.use('/presenze', require('./src/routes/presenze'));
 app.use('/canti-settimana', require('./src/routes/cantiSettimana'));
 app.use('/calendario', require('./src/routes/calendario'));
 app.use('/spartiti', require('./src/routes/spartiti'));
+app.use('/stock', require('./src/routes/stock'));
+
+
 // Route di test
 app.get('/', async (req, res) => {
   const dbStatus = mongoose.connection.readyState === 1 ? 'connesso' : 'disconnesso';
