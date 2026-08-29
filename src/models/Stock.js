@@ -4,6 +4,7 @@ const stockSchema = new mongoose.Schema({
     canto: { type: mongoose.Schema.Types.ObjectId, ref: 'Canto', required: true },
     coro: { type: mongoose.Schema.Types.ObjectId, ref: 'Coro', required: true },
     stock: { type: Number, default: 0 },
+    numeroLibretto: { type: String, default: '' },
     note: { type: String, default: '' },
     updatedAt: { type: Date, default: Date.now }
 });

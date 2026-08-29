@@ -20,6 +20,7 @@ router.get('/:coroId', auth, roles('admin'), async (req, res) => {
             autore: c.autore || '',
             categoria: c.categoria || '',
             stock: stockMap[c._id.toString()]?.stock ?? 0,
+            numeroLibretto: stockMap[c._id.toString()]?.numeroLibretto ?? '',
             note: stockMap[c._id.toString()]?.note ?? '',
             stockId: stockMap[c._id.toString()]?._id ?? null
         }));
@@ -30,14 +31,19 @@ router.get('/:coroId', auth, roles('admin'), async (req, res) => {
     }
 });
 
-// PATCH /stock/:coroId/:cantoId — aggiorna stock
+// PATCH /stock/:coroId/:cantoId — aggiorna stock, numero libretto e/o note
 router.patch('/:coroId/:cantoId', auth, roles('admin'), async (req, res) => {
     try {
-        const { stock, note } = req.body;
+        const { stock, numeroLibretto, note } = req.body;
+
+        const aggiornamento = { updatedAt: new Date() };
+        if (stock !== undefined) aggiornamento.stock = stock;
+        if (numeroLibretto !== undefined) aggiornamento.numeroLibretto = numeroLibretto;
+        if (note !== undefined) aggiornamento.note = note;
 
         const record = await Stock.findOneAndUpdate(
             { canto: req.params.cantoId, coro: req.params.coroId },
-            { stock, note, updatedAt: new Date() },
+            aggiornamento,
             { upsert: true, new: true }
         );
 
