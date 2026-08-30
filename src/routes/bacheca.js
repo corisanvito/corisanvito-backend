@@ -6,6 +6,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const roles = require('../middleware/roles');
 const { caricaSuDrive, eliminaDaDrive } = require('../utils/drive');
+const { inviaNotificaBacheca } = require('../utils/mailer');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -47,7 +48,7 @@ router.get('/', auth, async (req, res) => {
             .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
 
-            console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
+        console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
 
         res.json(avvisi);
     } catch (err) {
@@ -81,19 +82,57 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
                 }
             }
 
+            const destinatariUtentiParsed = destinatariUtenti ? JSON.parse(destinatariUtenti) : [];
+            const destinatariVociParsed = destinatariVoci ? JSON.parse(destinatariVoci) : [];
+
             const avviso = new Avviso({
                 titolo,
                 testo,
                 coro: coro || null,
                 autore: req.utente._id,
-                destinatariUtenti: destinatariUtenti ? JSON.parse(destinatariUtenti) : [],
-                destinatariVoci: destinatariVoci ? JSON.parse(destinatariVoci) : [],
+                destinatariUtenti: destinatariUtentiParsed,
+                destinatariVoci: destinatariVociParsed,
                 allegati
             });
 
             await avviso.save();
             console.log('avviso salvato:', JSON.stringify({ id: avviso._id, titolo: avviso.titolo, coro: avviso.coro, voci: avviso.destinatariVoci, utenti: avviso.destinatariUtenti, allegati: avviso.allegati?.length }));
+
+            // Risponde subito al client, poi invia le email in background
             res.status(201).json(avviso);
+
+            // --- Notifica email ---
+            try {
+                let utentiDaNotificare = [];
+
+                if (destinatariUtentiParsed.length > 0) {
+                    // Avviso per utenti specifici
+                    utentiDaNotificare = await User.find(
+                        { _id: { $in: destinatariUtentiParsed } },
+                        'email'
+                    );
+                } else if (destinatariVociParsed.length > 0) {
+                    // Avviso per voce/strumento, con o senza coro specifico
+                    const filtroVoci = { tipoVoce: { $in: destinatariVociParsed } };
+                    if (coro) filtroVoci.cori = coro;
+                    utentiDaNotificare = await User.find(filtroVoci, 'email');
+                } else {
+                    // Avviso generale per coro (o per tutti se coro è null)
+                    const filtroCoro = coro ? { cori: coro } : {};
+                    utentiDaNotificare = await User.find(filtroCoro, 'email');
+                }
+
+                const emails = utentiDaNotificare
+                    .map(u => u.email)
+                    .filter(Boolean);
+
+                await inviaNotificaBacheca(emails, titolo, testo);
+                console.log(`Email bacheca inviata a ${emails.length} destinatari per avviso "${titolo}"`);
+            } catch (mailErr) {
+                // L'avviso è già salvato: logghiamo l'errore ma non lo propaghiamo
+                console.error('Errore invio email bacheca:', mailErr);
+            }
+
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: 'Errore del server' });
