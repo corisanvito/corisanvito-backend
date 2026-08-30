@@ -98,11 +98,9 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
             await avviso.save();
             console.log('avviso salvato:', JSON.stringify({ id: avviso._id, titolo: avviso.titolo, coro: avviso.coro, voci: avviso.destinatariVoci, utenti: avviso.destinatariUtenti, allegati: avviso.allegati?.length }));
 
-            // Risponde subito al client, poi invia le email in background
-            res.status(201).json(avviso);
-
             // --- Notifica email ---
             try {
+                console.log('Inizio blocco email...');
                 let utentiDaNotificare = [];
 
                 if (destinatariUtentiParsed.length > 0) {
@@ -126,12 +124,15 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
                     .map(u => u.email)
                     .filter(Boolean);
 
+                console.log(`Destinatari email trovati: ${emails.length} →`, emails);
                 await inviaNotificaBacheca(emails, titolo, testo);
                 console.log(`Email bacheca inviata a ${emails.length} destinatari per avviso "${titolo}"`);
             } catch (mailErr) {
                 // L'avviso è già salvato: logghiamo l'errore ma non lo propaghiamo
                 console.error('Errore invio email bacheca:', mailErr);
             }
+
+            res.status(201).json(avviso);
 
         } catch (err) {
             console.error(err);
