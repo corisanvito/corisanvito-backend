@@ -48,7 +48,7 @@ router.get('/', auth, async (req, res) => {
             .populate('destinatariUtenti', 'nome cognome')
             .sort({ createdAt: -1 });
 
-        console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
+            console.log('avvisi trovati:', avvisi.length, JSON.stringify(avvisi.map(a => ({ id: a._id, titolo: a.titolo, coro: a.coro, voci: a.destinatariVoci, utenti: a.destinatariUtenti }))));
 
         res.json(avvisi);
     } catch (err) {
@@ -111,7 +111,12 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'),
                     );
                 } else if (destinatariVociParsed.length > 0) {
                     // Avviso per voce/strumento, con o senza coro specifico
-                    const filtroVoci = { tipoVoce: { $in: destinatariVociParsed } };
+                    // tipoVoce è una stringa CSV (es. "chitarra,soprano"), quindi
+                    // usiamo regex per trovare anche utenti con voci multiple.
+                    const regexVoci = destinatariVociParsed.map(v =>
+                        new RegExp(`(^|,)\\s*${v}\\s*(,|$)`, 'i')
+                    );
+                    const filtroVoci = { tipoVoce: { $in: regexVoci } };
                     if (coro) filtroVoci.cori = coro;
                     utentiDaNotificare = await User.find(filtroVoci, 'email');
                 } else {
