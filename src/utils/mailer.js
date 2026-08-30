@@ -1,10 +1,7 @@
-const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
-const OAuth2 = google.auth.OAuth2;
-
-async function creaTransporter() {
-    const oauth2Client = new OAuth2(
+async function creaGmailClient() {
+    const oauth2Client = new google.auth.OAuth2(
         process.env.GMAIL_CLIENT_ID,
         process.env.GMAIL_CLIENT_SECRET,
         'https://developers.google.com/oauthplayground'
@@ -14,19 +11,34 @@ async function creaTransporter() {
         refresh_token: process.env.GMAIL_REFRESH_TOKEN
     });
 
-    const { token: accessToken } = await oauth2Client.getAccessToken();
+    return google.gmail({ version: 'v1', auth: oauth2Client });
+}
 
-    return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            type: 'OAuth2',
-            user: process.env.MAIL_USER,
-            clientId: process.env.GMAIL_CLIENT_ID,
-            clientSecret: process.env.GMAIL_CLIENT_SECRET,
-            refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-            accessToken
-        }
-    });
+function costruisciEmail({ to, bcc, subject, text, html }) {
+    const boundary = 'boundary_csv_' + Date.now();
+    const lines = [
+        `From: "Cori San Vito" <${process.env.MAIL_USER}>`,
+        to ? `To: ${to}` : `To: ${process.env.MAIL_USER}`,
+        bcc && bcc.length ? `Bcc: ${bcc.join(', ')}` : '',
+        `Subject: ${subject}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain; charset=UTF-8',
+        '',
+        text,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/html; charset=UTF-8',
+        '',
+        html,
+        '',
+        `--${boundary}--`
+    ].filter(l => l !== null);
+
+    const raw = lines.join('\r\n');
+    return Buffer.from(raw).toString('base64url');
 }
 
 /**
@@ -38,10 +50,9 @@ async function creaTransporter() {
 async function inviaNotificaBacheca(emails, titolo, testo) {
     if (!emails || emails.length === 0) return;
 
-    const transporter = await creaTransporter();
+    const gmail = await creaGmailClient();
 
-    await transporter.sendMail({
-        from: `"Cori San Vito" <${process.env.MAIL_USER}>`,
+    const raw = costruisciEmail({
         bcc: emails,
         subject: `Nuovo avviso in bacheca: ${titolo}`,
         text:
@@ -57,6 +68,11 @@ async function inviaNotificaBacheca(emails, titolo, testo) {
             `<a href="https://corisanvito.github.io/portale/bacheca" ` +
             `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;` +
             `text-decoration:none;font-family:sans-serif">Apri la bacheca →</a></p>`
+    });
+
+    await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw }
     });
 }
 
