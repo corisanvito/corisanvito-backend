@@ -1,12 +1,33 @@
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-    }
-});
+const OAuth2 = google.auth.OAuth2;
+
+async function creaTransporter() {
+    const oauth2Client = new OAuth2(
+        process.env.GMAIL_CLIENT_ID,
+        process.env.GMAIL_CLIENT_SECRET,
+        'https://developers.google.com/oauthplayground'
+    );
+
+    oauth2Client.setCredentials({
+        refresh_token: process.env.GMAIL_REFRESH_TOKEN
+    });
+
+    const { token: accessToken } = await oauth2Client.getAccessToken();
+
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            type: 'OAuth2',
+            user: process.env.MAIL_USER,
+            clientId: process.env.GMAIL_CLIENT_ID,
+            clientSecret: process.env.GMAIL_CLIENT_SECRET,
+            refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+            accessToken
+        }
+    });
+}
 
 /**
  * Invia una mail di notifica per un nuovo avviso in bacheca.
@@ -17,9 +38,11 @@ const transporter = nodemailer.createTransport({
 async function inviaNotificaBacheca(emails, titolo, testo) {
     if (!emails || emails.length === 0) return;
 
+    const transporter = await creaTransporter();
+
     await transporter.sendMail({
         from: `"Cori San Vito" <${process.env.MAIL_USER}>`,
-        bcc: emails,          // BCC per non esporre gli indirizzi tra i destinatari
+        bcc: emails,
         subject: `Nuovo avviso in bacheca: ${titolo}`,
         text:
             `Hai un nuovo avviso in bacheca.\n\n` +
