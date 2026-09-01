@@ -12,28 +12,33 @@ async function creaGmailClient() {
 
 function costruisciEmail({ to, bcc, subject, text, html }) {
     const boundary = 'boundary_csv_' + Date.now();
-    const lines = [
+    // Codifica Subject in Base64 per supportare caratteri non-ASCII
+    const subjectEncoded = '=?UTF-8?B?' + Buffer.from(subject).toString('base64') + '?=';
+    const headers = [
         `From: "Cori San Vito" <${process.env.MAIL_USER}>`,
-        to ? `To: ${to}` : `To: ${process.env.MAIL_USER}`,
-        bcc && bcc.length ? `Bcc: ${bcc.join(', ')}` : '',
-        `Subject: ${subject}`,
+        `To: ${to || process.env.MAIL_USER}`,
+        ...(bcc && bcc.length ? [`Bcc: ${bcc.join(', ')}`] : []),
+        `Subject: ${subjectEncoded}`,
         'MIME-Version: 1.0',
         `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ];
+    const body = [
         '',
         `--${boundary}`,
         'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: quoted-printable',
         '',
         text,
         '',
         `--${boundary}`,
         'Content-Type: text/html; charset=UTF-8',
+        'Content-Transfer-Encoding: quoted-printable',
         '',
         html,
         '',
-        `--${boundary}--`
-    ].filter(l => l !== null);
-
-    return Buffer.from(lines.join('\r\n')).toString('base64url');
+        `--${boundary}--`,
+    ];
+    return Buffer.from([...headers, ...body].join('\r\n')).toString('base64url');
 }
 
 async function invia({ to, bcc, subject, text, html }) {
