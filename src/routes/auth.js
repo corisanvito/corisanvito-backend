@@ -10,24 +10,20 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Trova utente
         const utente = await User.findOne({ email }).populate('cori');
         if (!utente) {
             return res.status(401).json({ message: 'Credenziali non valide' });
         }
 
-        // Controlla se account è attivo
         if (!utente.attivo) {
             return res.status(403).json({ message: 'Account non ancora attivato' });
         }
 
-        // Verifica password
         const passwordCorretta = await bcrypt.compare(password, utente.password);
         if (!passwordCorretta) {
             return res.status(401).json({ message: 'Credenziali non valide' });
         }
 
-        // Genera token
         const token = jwt.sign(
             { id: utente._id, ruolo: utente.ruolo },
             process.env.JWT_SECRET,
@@ -42,7 +38,8 @@ router.post('/login', async (req, res) => {
                 cognome: utente.cognome,
                 email: utente.email,
                 ruolo: utente.ruolo,
-                cori: utente.cori
+                cori: utente.cori,
+                primoAccesso: utente.primoAccesso
             }
         });
     } catch (err) {
