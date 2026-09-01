@@ -26,13 +26,13 @@ function costruisciEmail({ to, bcc, subject, text, html }) {
         '',
         `--${boundary}`,
         'Content-Type: text/plain; charset=UTF-8',
-        'Content-Transfer-Encoding: quoted-printable',
+        'Content-Transfer-Encoding: 8bit',
         '',
         text,
         '',
         `--${boundary}`,
         'Content-Type: text/html; charset=UTF-8',
-        'Content-Transfer-Encoding: quoted-printable',
+        'Content-Transfer-Encoding: 8bit',
         '',
         html,
         '',
@@ -82,7 +82,7 @@ async function inviaCredenziali({ nome, cognome, email, ruolo, passwordTemporane
             `<p>Al primo accesso ti verrà chiesto di scegliere una nuova password.</p>` +
             `<p style="margin-top:1.5rem">` +
             `<a href="https://corisanvito.github.io/portale" ` +
-            `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif">` +
+            `style="background:#301934;color:#ffffff !important;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif;display:inline-block">` +
             `Accedi al portale →</a></p>` +
             `<p style="margin-top:2rem;color:#888;font-size:0.85rem">— Cori San Vito</p>`
     });
@@ -120,7 +120,7 @@ async function inviaNotificaAdmin({ nome, cognome, email, ruolo }) {
             `<p>L'account è in attesa di attivazione.</p>` +
             `<p style="margin-top:1.5rem">` +
             `<a href="https://corisanvito.github.io/portale/utenti" ` +
-            `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif">` +
+            `style="background:#301934;color:#ffffff !important;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif;display:inline-block">` +
             `Gestisci utenti →</a></p>`
     });
 }
@@ -144,9 +144,10 @@ async function inviaNotificaBacheca(emails, titolo, testo) {
             `<h2 style="font-family:sans-serif;color:#301934">${titolo}</h2>` +
             `<p style="font-family:sans-serif;white-space:pre-line">${testo}</p>` +
             `<p style="margin-top:1.5rem">` +
-            `<a href="https://corisanvito.github.io/portale/bacheca" ` +
-            `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;` +
-            `text-decoration:none;font-family:sans-serif">Apri la bacheca →</a></p>`
+            '<a href="https://corisanvito.github.io/portale/bacheca"' +
+            ' style="background:#301934;color:#fff;padding:10px 20px;' +
+            'border-radius:6px;text-decoration:none;font-family:sans-serif">' +
+            'Apri la bacheca \u2192</a></p>'
     });
 }
 
