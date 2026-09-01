@@ -6,11 +6,7 @@ async function creaGmailClient() {
         process.env.GMAIL_CLIENT_SECRET,
         'https://developers.google.com/oauthplayground'
     );
-
-    oauth2Client.setCredentials({
-        refresh_token: process.env.GMAIL_REFRESH_TOKEN
-    });
-
+    oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
     return google.gmail({ version: 'v1', auth: oauth2Client });
 }
 
@@ -37,22 +33,100 @@ function costruisciEmail({ to, bcc, subject, text, html }) {
         `--${boundary}--`
     ].filter(l => l !== null);
 
-    const raw = lines.join('\r\n');
-    return Buffer.from(raw).toString('base64url');
+    return Buffer.from(lines.join('\r\n')).toString('base64url');
+}
+
+async function invia({ to, bcc, subject, text, html }) {
+    const gmail = await creaGmailClient();
+    const raw = costruisciEmail({ to, bcc, subject, text, html });
+    await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+}
+
+/**
+ * Invia le credenziali di accesso al nuovo utente.
+ */
+async function inviaCredenziali({ nome, cognome, email, ruolo, passwordTemporanea }) {
+    const ruoliLabel = {
+        corista: 'Corista',
+        strumentista: 'Strumentista',
+        responsabile: 'Responsabile',
+        direttore: 'Direttore',
+        admin: 'Admin'
+    };
+
+    await invia({
+        to: email,
+        subject: 'Benvenuto nel portale Cori San Vito — le tue credenziali',
+        text:
+            `Ciao ${nome},\n\n` +
+            `il tuo account per il portale Cori San Vito è stato creato.\n\n` +
+            `Email: ${email}\n` +
+            `Password temporanea: ${passwordTemporanea}\n` +
+            `Ruolo: ${ruoliLabel[ruolo] || ruolo}\n\n` +
+            `Al primo accesso ti verrà chiesto di cambiare la password.\n\n` +
+            `Accedi qui: https://corisanvito.github.io/portale\n\n` +
+            `— Cori San Vito`,
+        html:
+            `<p>Ciao <strong>${nome}</strong>,</p>` +
+            `<p>il tuo account per il portale Cori San Vito è stato creato.</p>` +
+            `<table style="font-family:sans-serif;border-collapse:collapse;margin:1rem 0">` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Email</td><td><strong>${email}</strong></td></tr>` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Password temporanea</td><td><strong>${passwordTemporanea}</strong></td></tr>` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Ruolo</td><td><strong>${ruoliLabel[ruolo] || ruolo}</strong></td></tr>` +
+            `</table>` +
+            `<p>Al primo accesso ti verrà chiesto di scegliere una nuova password.</p>` +
+            `<p style="margin-top:1.5rem">` +
+            `<a href="https://corisanvito.github.io/portale" ` +
+            `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif">` +
+            `Accedi al portale →</a></p>` +
+            `<p style="margin-top:2rem;color:#888;font-size:0.85rem">— Cori San Vito</p>`
+    });
+}
+
+/**
+ * Notifica l'admin della creazione di un nuovo account.
+ */
+async function inviaNotificaAdmin({ nome, cognome, email, ruolo }) {
+    const ruoliLabel = {
+        corista: 'Corista',
+        strumentista: 'Strumentista',
+        responsabile: 'Responsabile',
+        direttore: 'Direttore',
+        admin: 'Admin'
+    };
+
+    await invia({
+        to: process.env.MAIL_USER,
+        subject: `Nuovo account creato: ${nome} ${cognome}`,
+        text:
+            `È stato creato un nuovo account sul portale Cori San Vito.\n\n` +
+            `Nome: ${nome} ${cognome}\n` +
+            `Email: ${email}\n` +
+            `Ruolo: ${ruoliLabel[ruolo] || ruolo}\n\n` +
+            `L'account è in attesa di attivazione.\n\n` +
+            `Gestisci gli utenti: https://corisanvito.github.io/portale/utenti`,
+        html:
+            `<p>È stato creato un nuovo account sul portale Cori San Vito.</p>` +
+            `<table style="font-family:sans-serif;border-collapse:collapse;margin:1rem 0">` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Nome</td><td><strong>${nome} ${cognome}</strong></td></tr>` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Email</td><td><strong>${email}</strong></td></tr>` +
+            `<tr><td style="padding:4px 12px 4px 0;color:#666">Ruolo</td><td><strong>${ruoliLabel[ruolo] || ruolo}</strong></td></tr>` +
+            `</table>` +
+            `<p>L'account è in attesa di attivazione.</p>` +
+            `<p style="margin-top:1.5rem">` +
+            `<a href="https://corisanvito.github.io/portale/utenti" ` +
+            `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif">` +
+            `Gestisci utenti →</a></p>`
+    });
 }
 
 /**
  * Invia una mail di notifica per un nuovo avviso in bacheca.
- * @param {string[]} emails - Array di indirizzi destinatari
- * @param {string} titolo - Titolo dell'avviso
- * @param {string} testo - Testo dell'avviso (senza allegati)
  */
 async function inviaNotificaBacheca(emails, titolo, testo) {
     if (!emails || emails.length === 0) return;
 
-    const gmail = await creaGmailClient();
-
-    const raw = costruisciEmail({
+    await invia({
         bcc: emails,
         subject: `Nuovo avviso in bacheca: ${titolo}`,
         text:
@@ -69,11 +143,6 @@ async function inviaNotificaBacheca(emails, titolo, testo) {
             `style="background:#301934;color:#fff;padding:10px 20px;border-radius:6px;` +
             `text-decoration:none;font-family:sans-serif">Apri la bacheca →</a></p>`
     });
-
-    await gmail.users.messages.send({
-        userId: 'me',
-        requestBody: { raw }
-    });
 }
 
-module.exports = { inviaNotificaBacheca };
+module.exports = { inviaCredenziali, inviaNotificaAdmin, inviaNotificaBacheca };

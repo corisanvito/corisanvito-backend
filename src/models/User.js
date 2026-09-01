@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
     telefono: { type: String },
     note: { type: String },
     attivo: { type: Boolean, default: false },
+    primoAccesso: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now }
 });
 
