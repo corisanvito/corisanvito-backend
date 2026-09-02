@@ -5,27 +5,25 @@ const Canto = require('../models/Canto');
 const auth = require('../middleware/auth');
 const roles = require('../middleware/roles');
 
-// GET /stock/:coroId — lista tutti i canti con il loro stock per quel coro
-router.get('/:coroId', auth, roles('admin'), async (req, res) => {
+// GET /stock/:coroId/export — scarica CSV dello stock
+router.get('/:coroId/export', auth, roles('admin'), async (req, res) => {
     try {
         const canti = await Canto.find().sort({ titolo: 1 });
 
         const stocks = await Stock.find({ coro: req.params.coroId });
         const stockMap = {};
-        stocks.forEach(s => { stockMap[s.canto.toString()] = s; });
+        stocks.forEach(s => { stockMap[s.canto.toString()] = s.stock; });
 
-        const risultato = canti.map(c => ({
-            _id: c._id,
-            titolo: c.titolo,
-            autore: c.autore || '',
-            categoria: c.categoria || '',
-            stock: stockMap[c._id.toString()]?.stock ?? 0,
-            numeroLibretto: stockMap[c._id.toString()]?.numeroLibretto ?? '',
-            note: stockMap[c._id.toString()]?.note ?? '',
-            stockId: stockMap[c._id.toString()]?._id ?? null
-        }));
+        const righe = ['titolo;stock;note'];
+        canti.forEach(c => {
+            const stock = stockMap[c._id.toString()] ?? 0;
+            const nota  = stocks.find(s => s.canto.toString() === c._id.toString())?.note || '';
+            righe.push(`${c.titolo};${stock};${nota}`);
+        });
 
-        res.json(risultato);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename=stock-coro-${req.params.coroId}.csv`);
+        res.send('\uFEFF' + righe.join('\n')); // BOM per Excel
     } catch (err) {
         res.status(500).json({ message: 'Errore del server' });
     }
