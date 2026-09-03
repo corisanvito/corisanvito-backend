@@ -5,6 +5,36 @@ const Canto = require('../models/Canto');
 const auth = require('../middleware/auth');
 const roles = require('../middleware/roles');
 
+// GET /stock/:coroId — lista canti con stock per un coro
+router.get('/:coroId', auth, roles('admin'), async (req, res) => {
+    try {
+        const canti = await Canto.find().sort({ titolo: 1 });
+        const stocks = await Stock.find({ coro: req.params.coroId });
+
+        const stockMap = {};
+        stocks.forEach(s => {
+            stockMap[s.canto.toString()] = s;
+        });
+
+        const risultato = canti.map(c => {
+            const s = stockMap[c._id.toString()];
+            return {
+                _id: s ? s._id : c._id,
+                cantoId: c._id,
+                titolo: c.titolo,
+                autore: c.autore || '',
+                stock: s ? s.stock : 0,
+                numeroLibretto: s ? s.numeroLibretto : '',
+                note: s ? s.note : ''
+            };
+        });
+
+        res.json(risultato);
+    } catch (err) {
+        res.status(500).json({ message: 'Errore del server' });
+    }
+});
+
 // GET /stock/:coroId/export — scarica CSV dello stock
 router.get('/:coroId/export', auth, roles('admin'), async (req, res) => {
     try {
