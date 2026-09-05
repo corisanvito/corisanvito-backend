@@ -1,3 +1,5 @@
+// NON UTILIZZARE - VERSIONE VECCHIA
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -15,31 +17,35 @@ async function importa() {
     const contenuto = fs.readFileSync(CSV_PATH, 'utf-8');
     const righe = contenuto.split('\n').slice(1).filter(r => r.trim());
 
+    console.log('Prima riga:', JSON.stringify(righe[0]));
+    console.log('Seconda riga:', JSON.stringify(righe[1]));
+
     let importati = 0, saltati = 0;
 
     for (const riga of righe) {
-        const [title, , , stockStr] = riga.split(';');
+        const [title, stockStr] = riga.split(';');
         const titolo = title?.trim();
         const stock = parseInt(stockStr?.trim()) || 0;
-
-        if (!titolo || stock === 0) { saltati++; continue; }
-
+    
+        if (!titolo) { saltati++; continue; }
+        if (stock === 0) { saltati++; continue; }
+    
         const canto = await Canto.findOne({
             titolo: { $regex: new RegExp(`^${titolo}$`, 'i') }
         });
-
+    
         if (!canto) {
-            console.log(`⚠️  Canto non trovato: "${titolo}"`);
+            console.log(`⚠️  Non trovato: "${titolo}"`);
             saltati++;
             continue;
         }
-
+    
         await Stock.findOneAndUpdate(
             { canto: canto._id, coro: CORO_ID },
             { stock, updatedAt: new Date() },
             { upsert: true }
         );
-
+    
         console.log(`✅ ${titolo}: stock ${stock}`);
         importati++;
     }
