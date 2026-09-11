@@ -59,9 +59,27 @@ router.post('/', auth, roles('admin', 'direttore', 'responsabile'), async (req, 
       }
     }
 
-    const presenza = new Presenza({ utente, coro, tipo, data, presente, note, registratoDa: req.utente._id });
-    await presenza.save();
+    // Upsert: se esiste già una presenza per stesso utente+coro+data la aggiorna
+    const presenza = await Presenza.findOneAndUpdate(
+      { utente, coro, data: new Date(data) },
+      { tipo, presente, note, registratoDa: req.utente._id },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
     res.status(201).json(presenza);
+  } catch (err) {
+    res.status(500).json({ message: 'Errore del server' });
+  }
+});
+
+// GET /presenze/coro/:coroId — presenze di un coro specifico (admin)
+router.get('/coro/:coroId', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
+  try {
+    const presenze = await Presenza.find({ coro: req.params.coroId })
+      .populate('utente', 'nome cognome')
+      .populate('coro', 'nome')
+      .sort({ data: -1 });
+
+    res.json(presenze);
   } catch (err) {
     res.status(500).json({ message: 'Errore del server' });
   }
@@ -83,20 +101,6 @@ router.delete('/:id', auth, roles('admin', 'direttore', 'responsabile'), async (
   try {
     await Presenza.findByIdAndDelete(req.params.id);
     res.json({ message: 'Presenza eliminata' });
-  } catch (err) {
-    res.status(500).json({ message: 'Errore del server' });
-  }
-});
-
-// GET /presenze/coro/:coroId — presenze di un coro specifico (admin)
-router.get('/coro/:coroId', auth, roles('admin', 'direttore', 'responsabile'), async (req, res) => {
-  try {
-    const presenze = await Presenza.find({ coro: req.params.coroId })
-      .populate('utente', 'nome cognome')
-      .populate('coro', 'nome')
-      .sort({ data: -1 });
-
-    res.json(presenze);
   } catch (err) {
     res.status(500).json({ message: 'Errore del server' });
   }
