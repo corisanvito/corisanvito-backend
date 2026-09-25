@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
     note: { type: String },
     attivo: { type: Boolean, default: false },
     primoAccesso: { type: Boolean, default: true },
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    resetToken: { type: String },
+    resetTokenExipiry: { type: Date },
 });
 
 module.exports = mongoose.model('User', userSchema);
