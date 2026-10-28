@@ -12,7 +12,6 @@ async function creaGmailClient() {
 
 function costruisciEmail({ to, bcc, subject, text, html }) {
     const boundary = 'boundary_csv_' + Date.now();
-    // Codifica Subject in Base64 per supportare caratteri non-ASCII
     const subjectEncoded = '=?UTF-8?B?' + Buffer.from(subject).toString('base64') + '?=';
     const headers = [
         `From: "Cori San Vito" <${process.env.MAIL_USER}>`,
@@ -151,4 +150,25 @@ async function inviaNotificaBacheca(emails, titolo, testo) {
     });
 }
 
-module.exports = { inviaCredenziali, inviaNotificaAdmin, inviaNotificaBacheca };
+/**
+ * Promemoria settimanale: ricorda di stampare i canti.
+ */
+async function inviaPromemoria() {
+    await invia({
+        to: process.env.MAIL_USER,
+        subject: '🎵 Promemoria: stampa i canti!',
+        text:
+            `Ricordati di stampare i canti per domani!\n\n` +
+            `https://corisanvito.github.io/portale/stampa-canti\n\n` +
+            `— Cori San Vito`,
+        html:
+            `<p>Ricordati di stampare i canti per domani!</p>` +
+            `<p style="margin-top:1.5rem">` +
+            `<a href="https://corisanvito.github.io/portale/stampa-canti" ` +
+            `style="background:#301934;color:#ffffff !important;padding:10px 20px;border-radius:6px;text-decoration:none;font-family:sans-serif;display:inline-block">` +
+            `Stampa i canti →</a></p>` +
+            `<p style="margin-top:2rem;color:#888;font-size:0.85rem">— Cori San Vito</p>`
+    });
+}
+
+module.exports = { inviaCredenziali, inviaNotificaAdmin, inviaNotificaBacheca, inviaPromemoria };

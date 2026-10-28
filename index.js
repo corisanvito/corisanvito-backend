@@ -1,7 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cron = require('node-cron');
+const https = require('https');
 require('dotenv').config();
+
+const { inviaPromemoria } = require('./src/utils/mailer');
 
 const app = express();
 
@@ -17,7 +21,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connesso'))
   .catch(err => console.error('❌ Errore MongoDB:', err));
 
-// Routes (le aggiungiamo dopo)
+// Routes
 app.use('/auth', require('./src/routes/auth'));
 app.use('/users', require('./src/routes/users'));
 app.use('/canti', require('./src/routes/canti'));
@@ -28,7 +32,6 @@ app.use('/canti-settimana', require('./src/routes/cantiSettimana'));
 app.use('/calendario', require('./src/routes/calendario'));
 app.use('/spartiti', require('./src/routes/spartiti'));
 app.use('/stock', require('./src/routes/stock'));
-
 
 // Route di test
 app.get('/', async (req, res) => {
@@ -157,9 +160,57 @@ app.get('/', async (req, res) => {
 </html>`);
 });
 
+app.get('/version', (req, res) => res.json({ node: process.version }));
+
+// Route di test promemoria (da rimuovere dopo il collaudo)
+app.get('/test-promemoria', async (req, res) => {
+  try {
+    // Email
+    await inviaPromemoria();
+    console.log('✅ Email promemoria inviata');
+
+    // Telegram
+    const STAMPA_CANTI_MSG = `🎵 Promemoria: ricordati di stampare i canti per domani!\nhttps://corisanvito.github.io/portale/stampa-canti`;
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage?chat_id=${process.env.TELEGRAM_CHAT_ID}&text=${encodeURIComponent(STAMPA_CANTI_MSG)}`;
+    await new Promise((resolve, reject) => {
+      https.get(url, (r) => {
+        console.log('✅ Telegram promemoria inviato, status:', r.statusCode);
+        resolve();
+      }).on('error', reject);
+    });
+
+    res.json({ ok: true, message: 'Email e Telegram inviati con successo' });
+  } catch (err) {
+    console.error('❌ Errore test promemoria:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// --- CRON JOB PROMEMORIA STAMPA CANTI ---
+
+const STAMPA_CANTI_MSG = `🎵 Promemoria: ricordati di stampare i canti per domani!\nhttps://corisanvito.github.io/portale/stampa-canti`;
+
+// Email - sabato alle 9:00
+cron.schedule('0 9 * * 6', async () => {
+  try {
+    await inviaPromemoria();
+    console.log('✅ Email promemoria inviata');
+  } catch (err) {
+    console.error('❌ Errore invio email promemoria:', err);
+  }
+}, { timezone: 'Europe/Rome' });
+
+// Telegram - sabato alle 18:00
+cron.schedule('0 18 * * 6', () => {
+  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage?chat_id=${process.env.TELEGRAM_CHAT_ID}&text=${encodeURIComponent(STAMPA_CANTI_MSG)}`;
+  https.get(url, (res) => {
+    console.log('✅ Telegram promemoria inviato, status:', res.statusCode);
+  }).on('error', (err) => {
+    console.error('❌ Errore invio Telegram promemoria:', err);
+  });
+}, { timezone: 'Europe/Rome' });
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server avviato sulla porta ${PORT}`);
 });
-
-app.get('/version', (req, res) => res.json({ node: process.version }));
