@@ -1,0 +1,12 @@
+name: Keep Alive
+
+on:
+  schedule:
+    - cron: '*/10 6-21 * * *'  # ogni 10 min, dalle 6 alle 21 UTC (= 7-22 ora italiana)
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend
+        run: curl --max-time 60 --silent --show-error https://corisanvito-backend.onrender.com/ping
