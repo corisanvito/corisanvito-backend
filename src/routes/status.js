@@ -3,14 +3,14 @@ const router = express.Router();
 const UptimeLog = require('../models/UptimeLog');
 
 router.get('/', async (req, res) => {
-    try {
-        const logs = await UptimeLog.find({})
-            .sort({ timestamp: 1 })
-            .lean();
+  try {
+    const logs = await UptimeLog.find({})
+      .sort({ timestamp: 1 })
+      .lean();
 
-        const logsJson = JSON.stringify(logs);
+    const logsJson = JSON.stringify(logs);
 
-        res.send(`<!DOCTYPE html>
+    res.send(`<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
@@ -347,6 +347,12 @@ router.get('/', async (req, res) => {
     <div id="boot-list" class="boot-list"></div>
   </div>
 
+  <!-- Ping per sorgente -->
+  <div class="card">
+    <h2>Ping per sorgente — ultimi 30 giorni</h2>
+    <div id="source-list" class="boot-list"></div>
+  </div>
+
 </div>
 
 <script>
@@ -516,13 +522,44 @@ document.getElementById('stat-gaps').textContent = gaps;
     list.appendChild(el);
   });
 })();
+
+// ── Ping per sorgente ────────────────────────────────────────
+(function buildSourceList() {
+  const list = document.getElementById('source-list');
+  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+  const counts = {};
+  pings
+    .filter(p => new Date(p.timestamp).getTime() >= cutoff)
+    .forEach(p => {
+      const s = p.source || 'unknown';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  if (!entries.length) {
+    list.innerHTML = '<p class="empty">Nessun ping negli ultimi 30 giorni.</p>';
+    return;
+  }
+
+  entries.forEach(([src, n]) => {
+    const el = document.createElement('div');
+    el.className = 'boot-item';
+    el.innerHTML = \`
+      < span class= "time" > ${src}</span >
+    <span class="ago">${n} ping</span>
+    \`;
+    list.appendChild(el);
+  });
+})();
 </script>
 </body>
 </html>`);
-    } catch (err) {
-        console.error('❌ Errore route /status:', err);
-        res.status(500).send('Errore nel caricamento dello storico.');
-    }
+  } catch (err) {
+    console.error('❌ Errore route /status:', err);
+    res.status(500).send('Errore nel caricamento dello storico.');
+  }
 });
 
 module.exports = router;
