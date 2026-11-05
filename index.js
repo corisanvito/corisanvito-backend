@@ -19,7 +19,10 @@ app.use(express.json());
 // Connessione MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connesso'))
-  .catch(err => console.error('❌ Errore MongoDB:', err));
+  .catch(err => {
+    console.error('❌ Errore MongoDB:', err);
+    process.exit(1);
+  });
 
 // Routes
 app.use('/auth', require('./src/routes/auth'));
@@ -39,12 +42,15 @@ app.use('/status', require('./src/routes/status'));
 // Ping — usato da GitHub Actions per tenere sveglio il servizio
 app.get('/ping', async (req, res) => {
   try {
+    await mongoose.connection.asPromise();
     const source = req.headers['x-ping-source'] || 'unknown';
-    await UptimeLog.create({ type: 'ping', source });
+    const doc = await UptimeLog.create({ type: 'ping', source });
+    console.log('✅ ping salvato', doc._id.toString());
+    res.status(200).send('pong');
   } catch (err) {
     console.error('❌ Errore log ping:', err.message);
+    res.status(500).send('error');
   }
-  res.status(200).send('pong');
 });
 
 // Dashboard di stato
@@ -171,15 +177,17 @@ app.get('/test-promemoria', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-  console.log(`🚀 Server avviato sulla porta ${PORT}`);
-  // Logga il boot su MongoDB (con piccolo delay per attendere la connessione)
-  setTimeout(async () => {
-    try {
-      await UptimeLog.create({ type: 'boot', source: 'render' });
-      console.log('✅ Boot loggato');
-    } catch (err) {
-      console.error('❌ Errore log boot:', err.message);
-    }
-  }, 3000);
+
+mongoose.connection.once('open', () => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server avviato sulla porta ${PORT}`);
+    setTimeout(async () => {
+      try {
+        await UptimeLog.create({ type: 'boot', source: 'render' });
+        console.log('✅ Boot loggato');
+      } catch (err) {
+        console.error('❌ Errore log boot:', err.message);
+      }
+    }, 3000);
+  });
 });

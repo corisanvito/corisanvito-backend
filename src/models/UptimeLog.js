@@ -8,16 +8,19 @@ const uptimeLogSchema = new mongoose.Schema({
     },
     timestamp: {
         type: Date,
-        default: Date.now,
-        index: true
+        default: Date.now
+        // NON mettere "index: true" qui
     },
     source: {
-        type: String, // es. 'github-actions', 'manual', 'unknown'
+        type: String,
         default: 'unknown'
     }
 });
 
-// TTL index: cancella automaticamente i documenti dopo 30 giorni
-uptimeLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+// TTL: cancella i documenti dopo 30 giorni
+uptimeLogSchema.index(
+    { timestamp: 1 },
+    { expireAfterSeconds: 30 * 24 * 60 * 60, name: 'timestamp_ttl' }
+);
 
 module.exports = mongoose.model('UptimeLog', uptimeLogSchema);
