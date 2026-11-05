@@ -43,12 +43,9 @@ app.use('/status', require('./src/routes/status'));
 app.get('/ping', async (req, res) => {
   try {
     await mongoose.connection.asPromise();
-    const source =
-      req.query.src ||                        // ?src=uptimerobot
-      req.headers['x-ping-source'] ||         // header custom (opzionale)
-      'unknown';
+    const source = req.headers['x-ping-source'] || 'unknown';
     const doc = await UptimeLog.create({ type: 'ping', source });
-    console.log('✅ ping salvato', doc._id.toString(), '| source:', source);
+    console.log('✅ ping salvato', doc._id.toString());
     res.status(200).send('pong');
   } catch (err) {
     console.error('❌ Errore log ping:', err.message);
