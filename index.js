@@ -52,6 +52,7 @@ app.get('/', async (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="refresh" content="30">
   <title>Cori San Vito — API</title>
+  <script src="https://cdn.counter.dev/script.js" data-id="0b8a28a7-bd9e-4970-aa87-bd107e273a32" data-utcoffset="2"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
