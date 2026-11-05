@@ -5,6 +5,7 @@ const https = require('https');
 require('dotenv').config();
 
 const { inviaPromemoria } = require('./src/utils/mailer');
+const UptimeLog = require('./src/models/UptimeLog');
 
 const app = express();
 
@@ -32,8 +33,17 @@ app.use('/calendario', require('./src/routes/calendario'));
 app.use('/spartiti', require('./src/routes/spartiti'));
 app.use('/stock', require('./src/routes/stock'));
 
+// Status page
+app.use('/status', require('./src/routes/status'));
+
 // Ping — usato da GitHub Actions per tenere sveglio il servizio
-app.get('/ping', (req, res) => {
+app.get('/ping', async (req, res) => {
+  try {
+    const source = req.headers['x-ping-source'] || 'unknown';
+    await UptimeLog.create({ type: 'ping', source });
+  } catch (err) {
+    console.error('❌ Errore log ping:', err.message);
+  }
   res.status(200).send('pong');
 });
 
@@ -91,18 +101,13 @@ app.get('/', async (req, res) => {
       margin-bottom: 0.3rem;
     }
     .status-value { font-size: 1rem; font-weight: 600; }
-    .dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 0.4rem;
-    }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; }
     .dot.green { background: #2e7d32; }
     .dot.red   { background: #c0392b; }
     .ok  { color: #2e7d32; }
     .err { color: #c0392b; }
     .footer { font-size: 0.78rem; color: #aaa; margin-top: 1.5rem; }
+    .status-link { display: inline-block; margin-top: 1.2rem; font-size: 0.85rem; color: #301934; text-decoration: none; border-bottom: 1px solid #301934; }
   </style>
 </head>
 <body>
@@ -113,9 +118,7 @@ app.get('/', async (req, res) => {
     <div class="status-grid">
       <div class="status-item">
         <div class="status-label">API</div>
-        <div class="status-value ok">
-          <span class="dot green"></span>Attiva
-        </div>
+        <div class="status-value ok"><span class="dot green"></span>Attiva</div>
       </div>
       <div class="status-item">
         <div class="status-label">Database</div>
@@ -132,6 +135,7 @@ app.get('/', async (req, res) => {
         <div class="status-value">${process.env.NODE_ENV || 'production'}</div>
       </div>
     </div>
+    <a class="status-link" href="/status">Storico uptime →</a>
     <p class="footer">
       ${new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
       — ${new Date().toLocaleTimeString('it-IT')}
@@ -167,6 +171,15 @@ app.get('/test-promemoria', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server avviato sulla porta ${PORT}`);
+  // Logga il boot su MongoDB (con piccolo delay per attendere la connessione)
+  setTimeout(async () => {
+    try {
+      await UptimeLog.create({ type: 'boot', source: 'render' });
+      console.log('✅ Boot loggato');
+    } catch (err) {
+      console.error('❌ Errore log boot:', err.message);
+    }
+  }, 3000);
 });
