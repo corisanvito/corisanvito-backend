@@ -67,6 +67,31 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     }
 });
 
+// PATCH /spartiti/:id — modifica tonalità e strumenti (solo chi ha caricato o admin)
+router.patch('/:id', auth, async (req, res) => {
+    try {
+        const spartito = await Spartito.findById(req.params.id);
+        if (!spartito) return res.status(404).json({ message: 'Spartito non trovato' });
+
+        const isAdmin = ['admin', 'direttore', 'responsabile'].includes(req.utente.ruolo);
+        const isAutore = spartito.caricatoDa.toString() === req.utente._id.toString();
+
+        if (!isAdmin && !isAutore) {
+            return res.status(403).json({ message: 'Non autorizzato' });
+        }
+
+        const { tonalita, strumenti } = req.body;
+        if (tonalita !== undefined) spartito.tonalita = tonalita;
+        if (strumenti !== undefined) spartito.strumenti = strumenti;
+
+        await spartito.save();
+        res.json(spartito);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Errore del server' });
+    }
+});
+
 // DELETE /spartiti/:id — elimina (solo chi ha caricato o admin)
 router.delete('/:id', auth, async (req, res) => {
     try {
